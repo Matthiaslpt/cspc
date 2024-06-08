@@ -22,7 +22,7 @@ BOLD = "\x1B[1m"                     # Bold
 UNDERLINE = "\x1B[4m"                # Underline
 
 CL_WHITE = "\033[01;37m"             # White color
-Case = {0: "□", 1: "■"}
+Case = {0: "⬜", 1: "⬛"}
 
 def effacer_ecran():
     print(CLEARSCR, end='')
@@ -71,7 +71,7 @@ def load_nextgen(start, end, size, barriere, shared_cworld_array, shared_nworld_
             for idx in range(size*size):
                 shared_cworld_array[idx] = shared_nworld_array[idx]
             print_world(shared_cworld_array, size)
-            time.sleep(0.5)
+            time.sleep(0.1)
 
         barriere.wait()
 
@@ -132,7 +132,7 @@ if __name__ == "__main__":
         while True:
             barriere.wait()
             barriere.wait()
-            time.sleep(0.5)
+            time.sleep(0.1)
     except KeyboardInterrupt:
         for p in processes:
             p.terminate()
