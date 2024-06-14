@@ -138,4 +138,4 @@ if __name__ == "__main__":
             p.terminate()
         effacer_ecran()
         curseur_visible()
-        print("Simulation terminated.")
+        print("Fin de simulation")
