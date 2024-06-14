@@ -22,7 +22,7 @@ BOLD = "\x1B[1m"                     # Bold
 UNDERLINE = "\x1B[4m"                # Underline
 
 CL_WHITE = "\033[01;37m"             # White color
-Case = {0: "⬜", 1: "⬛"}
+Case = {0: "⬛", 1: "⬜"}
 
 def effacer_ecran():
     print(CLEARSCR, end='')
