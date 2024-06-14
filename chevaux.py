@@ -59,65 +59,119 @@ def en_rouge(): print(CL_RED, end='')  # Un exemple !
 def erase_line(): print(CLEARELN, end='')
 
 # La tâche d'un cheval
-def un_cheval(ma_ligne: int, positions, keep_running, lock, longueur_course):  # ma_ligne commence à 0
+def un_cheval(ma_ligne: int, positions, keep_running, mutex):
     col = 1
+    while col < LONGEUR_COURSE and keep_running.value:
+        with mutex:
+            current_col = positions[ma_ligne]  # Position actuelle du cheval
 
-    while col < longueur_course and keep_running.value:
-        with lock:
-            effacer_cheval(ma_ligne, col - 1)
-            dessiner_cheval(ma_ligne, col)
+            # Effacer l'ancien dessin du cheval à la position actuelle
+            move_to(ma_ligne * 4 + 1, current_col)
+            erase_line()
+            move_to(ma_ligne * 4 + 2, current_col)
+            erase_line()
+            move_to(ma_ligne * 4 + 3, current_col)
+            erase_line()
+            move_to(ma_ligne * 4 + 4, current_col)
+            erase_line()
 
-        col += 1
-        positions[ma_ligne] = col
+            # Avancer le cheval
+            positions[ma_ligne] += 1
+            col = positions[ma_ligne]
+
+            # Dessiner le cheval à la nouvelle position
+            move_to(ma_ligne * 4 + 1, col)
+            en_couleur(lyst_colors[ma_ligne % len(lyst_colors)])
+            print(" _______\\/")
+            move_to(ma_ligne * 4 + 2, col)
+            print("/−−−− _.\ ")
+            move_to(ma_ligne * 4 + 3, col)
+            print("/|_____\\")
+            move_to(ma_ligne * 4 + 4, col)
+            print("/\\  /\\")
+            
         time.sleep(0.1 * random.randint(1, 5))
 
-    # Le premier arrivé gèle la course !
-    keep_running.value = False
+    if col >= LONGEUR_COURSE:
+        keep_running.value = False
 
-def dessiner_cheval(ma_ligne, col):
-    cheval = [
-        "__________\\/",
-        " /−−−− _.\\",
-        " /|_____/ ",
-        "  /\\ /\\  "
-    ]
-    for i, ligne in enumerate(cheval):
-        move_to(ma_ligne * 5 + i + 1, col)
-        print(ligne)
+def demander_prediction():
+    while True:
+        try:
+            lettre = input("Prévoyez le cheval gagnant (A à {}): ".format(chr(ord('A') + Nb_process - 1))).upper()
+            if lettre.isalpha() and 'A' <= lettre <= chr(ord('A') + Nb_process - 1):
+                return ord(lettre) - ord('A')
+            else:
+                print("Veuillez entrer une lettre valide entre A et {}.".format(chr(ord('A') + Nb_process - 1)))
+        except ValueError:
+            print("Veuillez entrer une lettre valide.")
 
-def effacer_cheval(ma_ligne, col):
-    cheval = [
-        "           ",
-        "           ",
-        "           ",
-        "           "
-    ]
-    for i, ligne in enumerate(cheval):
-        move_to(ma_ligne * 5 + i + 1, col)
-        print(ligne)
+def verifier_prediction(prediction_utilisateur, chevaux_gagnants):
+    if prediction_utilisateur in chevaux_gagnants:
+        print("Félicitations! Vous avez choisi le bon cheval!")
+    else:
+        print("Dommage! Le cheval que vous avez choisi n'a pas gagné.")
 
-def arbitre(positions, keep_running, lock, prediction, nb_process):
-    while keep_running.value:
-        time.sleep(1)
-        with lock:
-            leader = max(positions)
-            last = min(positions)
-            leader_horses = [i for i, pos in enumerate(positions) if pos == leader]
-            last_horses = [i for i, pos in enumerate(positions) if pos == last]
-            move_to(nb_process * 5 + 1, 1)
-            erase_line_from_beg_to_curs()
-            print("Leader:", ' '.join([chr(ord('A') + h) for h in leader_horses]))
-            move_to(nb_process * 5 + 2, 1)
-            erase_line_from_beg_to_curs()
-            print("Last:", ' '.join([chr(ord('A') + h) for h in last_horses]))
-    with lock:
-        winner = [i for i, pos in enumerate(positions) if pos == max(positions)]
-        move_to(nb_process * 5 + 3, 1)
-        erase_line_from_beg_to_curs()
-        if prediction in winner:
-            print(f"Course terminée. Gagnant: {chr(ord('A') + winner[0])}. Votre prédiction était correcte!")
-        else:
-            print(f"Course terminée. Gagnant: {chr(ord('A') + winner[0])}. Votre prédiction était incorrecte.")
+# Fonction pour l'arbitre de la course
+# Fonction pour l'arbitre de la course
+# Fonction pour l'arbitre de la course
+# Fonction pour l'arbitre de la course
+def arbitre(positions, keep_running, mutex):
+    while True:
+        time.sleep(0.5)
+
+        # Utilisation d'une copie temporaire sécurisée des positions des chevaux
+        with mutex:
+            current_positions = list(positions)
+
+        # Détecter les chevaux à égalité (même position)
+        tied_horses = {}
+        for i, pos in enumerate(current_positions):
+            if pos in tied_horses:
+                tied_horses[pos].append(i)
+            else:
+                tied_horses[pos] = [i]
+
+        # Trouver le premier (premier) et le dernier (dernier) cheval
+        premier = max(current_positions)
+        dernier = min(current_positions)
+        premier_horses = [i for i, pos in enumerate(current_positions) if pos == premier]
+        dernier_horses = [i for i, pos in enumerate(current_positions) if pos == dernier]
+
+        # Afficher les informations en bas de l'écran
+        with mutex:
+            move_to(Nb_process * 4 + 2, 1)
+            erase_line()
+            print(f"Premier: {', '.join(chr(ord('A') + i) for i in premier_horses)}")
+            move_to(Nb_process * 4 + 3, 1)
+            erase_line()
+            for pos, horses in tied_horses.items():
+                if len(horses) > 1:
+                    print(f"Les chevaux a égalité : {', '.join(chr(ord('A') + i) for i in horses)}")
+            move_to(Nb_process * 4 + 4, 1)
+            erase_line()
+            print(f"Dernier: {', '.join(chr(ord('A') + i) for i in dernier_horses)}")
+
+        # Vérifier si la course est terminée
+        if not keep_running.value:
+            break
+
+    # Afficher le résultat final une fois que la course est terminée
+    with mutex:
+        premier_horses = [i for i, pos in enumerate(current_positions) if pos == premier]
+        dernier_horses = [i for i, pos in enumerate(current_positions) if pos == dernier]
+
+        move_to(Nb_process * 4 + 5, 1)
+        erase_line()
+        print(f"Course terminée! Premier: {', '.join(chr(ord('A') + i) for i in premier_horses)}")
+        move_to(Nb_process * 4 + 6, 1)
+        erase_line()
+        for pos, horses in tied_horses.items():
+            if len(horses) > 1:
+                print(f"À égalité avec {', '.join(chr(ord('A') + i) for i in horses)}")
+        move_to(Nb_process * 4 + 7, 1)
+        erase_line()
+        print(f"Dernier: {', '.join(chr(ord('A') + i) for i in dernier_horses)}")
 
 def detourner_signal(signum, stack_frame):
     move_to(Nb_process * 5 + 5, 1)
@@ -133,36 +187,53 @@ def detourner_signal(signum, stack_frame):
 if __name__ == "__main__":
     import platform
     if platform.system() == "Darwin":
-        mp.set_start_method('fork')  # Nécessaire sous macos, OK pour Linux
+        mp.set_start_method('fork')
 
     LONGEUR_COURSE = 50
-    Nb_process = 20
+    Nb_process = 10
+
     positions = mp.Array('i', [0] * Nb_process)
     keep_running = mp.Value(ctypes.c_bool, True)
-    lock = mp.Lock()
+    mutex = mp.Lock()  # Créer un mutex pour l'exclusion mutuelle
 
+    mes_process = [0 for i in range(Nb_process)]
     effacer_ecran()
     curseur_invisible()
+    prediction_utilisateur = demander_prediction()
 
+    # Détournement d'interruption
     signal.signal(signal.SIGINT, detourner_signal)
 
-    prediction = input("Prédisez le gagnant (A à T) : ").upper()
-    while prediction not in [chr(ord('A') + i) for i in range(Nb_process)]:
-        prediction = input("Prédiction invalide. Prédisez le gagnant (A à T) : ").upper()
+    # Démarrer les processus des chevaux
+    for i in range(Nb_process):
+        mes_process[i] = mp.Process(target=un_cheval, args=(i, positions, keep_running, mutex))
+        mes_process[i].start()
 
-    prediction = ord(prediction) - ord('A')
-
-    mes_process = [mp.Process(target=un_cheval, args=(i, positions, keep_running, lock, LONGEUR_COURSE)) for i in range(Nb_process)]
-    arbitre_process = mp.Process(target=arbitre, args=(positions, keep_running, lock, prediction, Nb_process))
-
-    for p in mes_process:
-        p.start()
+    # Démarrer le processus arbitre
+    arbitre_process = mp.Process(target=arbitre, args=(positions, keep_running, mutex))
     arbitre_process.start()
 
-    for p in mes_process:
-        p.join()
+    # Afficher un message pour indiquer que la course est lancée
+    move_to(Nb_process * 4 + 10, 1)
+    print("Tous lancés, CTRL-C arrêtera la course ...")
+
+    # Attendre que tous les processus des chevaux terminent
+    for i in range(Nb_process):
+        mes_process[i].join()
+
+    # Attendre que le processus arbitre termine
     arbitre_process.join()
 
-    move_to(Nb_process * 5 + 5, 1)
+    # Afficher le résultat final
+    move_to(Nb_process * 4 + 10, 1)
+    with mutex:
+        current_positions = list(positions)
+    max_position = max(current_positions)
+    chevaux_gagnants = [i for i, pos in enumerate(current_positions) if pos == max_position]
+    verifier_prediction(prediction_utilisateur, chevaux_gagnants)
+
     curseur_visible()
-    print("Fini ...", flush=True)
+    print("Fini ... ", flush=True)
+
+
+
