@@ -1,88 +1,101 @@
-import time,os,random
+import time
+import random
 import multiprocessing as mp
-import signal, sys
+import signal
+import sys
 
-def interupt(signal, frame):
+# Fonction pour gérer l'interruption (Ctrl+C)
+def interrupt(signal, frame):
     print("Fin du programme")
     for process in mp.active_children():
-        process.terminate()
-        process.join()
+        process.terminate()  # Termine tous les processus enfants actifs
+    sys.exit(0)
 
-def filtrage(queue, id):
-    temp = []
-    while True: # Filtrage de la queue
-        if not queue.empty():
-            msg = queue.get()
-            if msg[1] == id:
-                break
-            else:
-                temp.append(msg) # On stocke les messages non utilisés
-        time.sleep(1)
-    for item in temp:
-        queue.put(item) # On remet les messages qui ne sont pas destinés à ce calculateur dans la queue
-    return msg
+# Fonction pour les demandeurs
+def demandeur(queue_d, queue_a, lock_d, lock_a):
+    try:
+        while True:
+            opd1 = random.randint(1, 10)
+            opd2 = random.randint(1, 10)
+            operateur = random.choice(["+", "-", "*", "/"])
+            str_commande = f"{opd1}{operateur}{opd2}"
+            
+            # Ajoute la commande dans la queue_d avec verrou
+            with lock_d:
+                queue_d.put((str_commande, mp.current_process().pid))
+            
+            print(f"Le demandeur {mp.current_process().pid} va demander à faire : {str_commande}")
+            
+            while True:
+                temp = []
+                res = None
+                # Recherche de la réponse correspondante dans la queue_a avec verrou
+                with lock_a:
+                    while not queue_a.empty():
+                        res = queue_a.get()
+                        if res[1] == mp.current_process().pid:
+                            break
+                        else:
+                            temp.append(res)
+                    for item in temp:
+                        queue_a.put(item)
+                
+                if res and res[1] == mp.current_process().pid:
+                    print(f"Le demandeur {mp.current_process().pid} a reçu : {res[0]}")
+                    break
+                time.sleep(1)
+    except KeyboardInterrupt:
+        return
 
-
-
-def demandeur(queue_d, queue_a):
-    while True:
-        # Le demandeur envoie au fils un calcul aléatoire à faire et récupère le résultat
-        opd1 = random.randint(1,10)
-        opd2 = random.randint(1,10)
-        operateur = random.choice(["+", "-", "*", "/"])
-        str_commande = str(opd1) + operateur + str(opd2)
-        queue_d.put([str_commande, mp.current_process().pid])
-        print(f"Le demandeur {mp.current_process().pid} va demander à faire : ", str_commande)
-        while queue_a.empty():
+# Fonction pour les fils calculette
+def fils_calculette(queue_d, queue_a, lock_d, lock_a):
+    print(f"Bonjour du Fils {mp.current_process().pid}")
+    try:
+        while True:
+            # Récupère une commande de la queue_d avec verrou
+            with lock_d:
+                if not queue_d.empty():
+                    cmd, demandeur_id = queue_d.get()
+                    print(f"Le fils {mp.current_process().pid} a reçu : {cmd}")
+                    
+                    try:
+                        res = eval(cmd)  # Attention: eval peut être dangereux
+                    except Exception as e:
+                        res = f"Erreur: {e}"
+                    
+                    print(f"Dans fils {mp.current_process().pid}, le résultat = {res}")
+                    
+                    # Met le résultat dans la queue_a avec verrou
+                    with lock_a:
+                        queue_a.put((res, demandeur_id))
+                    
+                    print(f"Le fils {mp.current_process().pid} a envoyé : {res}")
             time.sleep(1)
-        res = filtrage(queue_a, mp.current_process().pid)
-        print(f"Le demandeur {mp.current_process().pid} a recu ", res[0])
-        time.sleep(1)
+    except KeyboardInterrupt:
+        return
 
-def fils_calculette(queue_d, queue_a):
-    print("Bonjour du Fils ", mp.current_process()) 
-    
-    while True:
-        if not queue_d.empty():
-            msg = queue_d.get()
-            cmd = msg[0]
-            print(f"Le fils {mp.current_process().pid} a recu ", cmd)
-            res=eval(cmd)
-            print(f"Dans fils {mp.current_process().pid}, le résultat =", res)
-            queue_a.put([res, msg[1]])
-            print(f"Le fils {mp.current_process().pid} a envoyé", res)
-
-        time.sleep(1)
-    os._exit(0)
-
-    
+# Programme principal
 if __name__ == "__main__":
-    m = 2
-    n = 4
-    processes_d = []
-    processes_c = []
+    m = 2  # Nombre de demandeurs
+    n = 4  # Nombre de fils calculette
     queue_d = mp.Queue()
     queue_a = mp.Queue()
-    for i in range(m):
-        p = mp.Process(target=demandeur, args=(queue_d, queue_a))
-        
-        processes_d.append(p)
+    
+    lock_d = mp.Lock()
+    lock_a = mp.Lock()
+    
+    processes_d = [mp.Process(target=demandeur, args=(queue_d, queue_a, lock_d, lock_a)) for _ in range(m)]
+    processes_c = [mp.Process(target=fils_calculette, args=(queue_d, queue_a, lock_d, lock_a)) for _ in range(n)]
 
-    for i in range(n):
-        p = mp.Process(target=fils_calculette, args=(queue_d, queue_a))
-        processes_c.append(p)
-
+    signal.signal(signal.SIGINT, interrupt)  # Gère les interruptions clavier
 
     for p in processes_c:
         p.start()
-        
     for p in processes_d:
         p.start()
-    
- 
 
-    signal.signal(signal.SIGINT, interupt)
-
-
-
-            
+    try:
+        for p in processes_d + processes_c:
+            p.join()  # Attend la fin de tous les processus
+    except KeyboardInterrupt:
+        interrupt(None, None)  # Gère les interruptions pendant l'attente
