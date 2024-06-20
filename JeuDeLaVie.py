@@ -111,6 +111,7 @@ if __name__ == "__main__":
 
     for x, y in glider_gun_coords:
         current_world[x][y] = 1
+        
     current_world = np.array(current_world)
     shared_cworld_array = mp.Array('i', current_world.reshape(1, size*size)[0])
     shared_nworld_array = mp.Array('i', size*size)

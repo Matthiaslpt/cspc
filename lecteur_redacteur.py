@@ -1,41 +1,66 @@
 import multiprocessing as mp
 import time
 import random
+import signal
+import sys
 
 def lecteur(lecteurs, redacteurs, demandes_de_redaction, mutex):
     while True:
-        with mutex:
-            while demandes_de_redaction.value > 0:
-                mutex.release()
-                time.sleep(0.1)
-                mutex.acquire()
-            lecteurs.value += 1
+        try:
+            with mutex:
+                while demandes_de_redaction.value > 0:
+                    mutex.release()
+                    time.sleep(0.1)
+                    mutex.acquire()
+                lecteurs.value += 1
+        except KeyboardInterrupt:
+            print(f"Lecteur {mp.current_process().name} interrompu")
+            break
+
         print(f"Lecteur {mp.current_process().name} lit les données")
         time.sleep(random.uniform(0.1, 0.5))
+
         with mutex:
             lecteurs.value -= 1
             if lecteurs.value == 0 and demandes_de_redaction.value == 0:
                 redacteurs.release()
+        
+        print(f"Lecteur {mp.current_process().name} a fini de lire les données")
         time.sleep(random.uniform(0.1, 0.5))
 
 def redacteur(lecteurs, redacteurs, demandes_de_redaction, mutex):
     while True:
-        with mutex:
-            demandes_de_redaction.value += 1
-            while lecteurs.value > 0 or redacteurs.get_value() == 0:
-                mutex.release()
-                time.sleep(0.1)
-                mutex.acquire()
-            redacteurs.acquire()
+        try:
+            with mutex:
+                demandes_de_redaction.value += 1
+                while lecteurs.value > 0 or redacteurs.get_value() == 0:
+                    mutex.release()
+                    time.sleep(0.1)
+                    mutex.acquire()
+                redacteurs.acquire()
+        except KeyboardInterrupt:
+            print(f"Rédacteur {mp.current_process().name} interrompu")
+            break
+
         print(f"Rédacteur {mp.current_process().name} écrit les données")
         time.sleep(random.uniform(0.1, 0.5))
+
         with mutex:
+            redacteurs.release()
             demandes_de_redaction.value -= 1
             if demandes_de_redaction.value == 0:
                 redacteurs.release()
+        
+        print(f"Rédacteur {mp.current_process().name} a fini d'écrire les données")
         time.sleep(random.uniform(0.1, 0.5))
 
+def handle_sigint(signum, frame):
+    print("\nArrêt du programme par l'utilisateur (Ctrl-C).")
+    sys.exit(0)
+
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, handle_sigint)
+    
     nb_lecteurs = 3
     nb_redacteurs = 2
 
@@ -52,7 +77,14 @@ if __name__ == "__main__":
         p = mp.Process(target=redacteur, args=(lecteurs, redacteurs, demandes_de_redaction, mutex), name=f"R{i}")
         processus.append(p)
 
-    for p in processus:
-        p.start()
-    for p in processus:
-        p.join()
+    try:
+        for p in processus:
+            p.start()
+        for p in processus:
+            p.join()
+    except KeyboardInterrupt:
+        print("\nArrêt du programme par l'utilisateur (Ctrl-C).")
+        for p in processus:
+            p.terminate()
+        for p in processus:
+            p.join()

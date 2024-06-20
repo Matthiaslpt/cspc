@@ -59,7 +59,7 @@ def fils_calculette(queue_d, queue_a, lock_d, lock_a):
                     print(f"Le fils {mp.current_process().pid} a reçu : {cmd}")
                     
                     try:
-                        res = eval(cmd)  # Attention: eval peut être dangereux
+                        res = eval(cmd) 
                     except Exception as e:
                         res = f"Erreur: {e}"
                     
@@ -98,4 +98,4 @@ if __name__ == "__main__":
         for p in processes_d + processes_c:
             p.join()  # Attend la fin de tous les processus
     except KeyboardInterrupt:
-        interrupt(None, None)  # Gère les interruptions pendant l'attente
+        interrupt(None,None)  # Gère les interruptions pendant l'attente
