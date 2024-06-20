@@ -27,10 +27,10 @@ def Travailleur(k_bills, s, Lock, SC, id): #fonction qui permet de créer les pr
     m = 2
     for i in range(m):
         print("Je suis le processus ",id," je demande: ",k_bills)
-        Demander(k_bills, Lock, s, SC,id)
+        Demander(k_bills, Lock, s, SC,id) # Demande les billes jusqu'a les recevoir
         print("Je suis le processus ",id," j'utilise: ",k_bills," il en reste donc :", nbr_disponible_billes.value)
         time.sleep(k_bills)
-        rendre(k_bills, s)
+        rendre(k_bills, s) # Rend les billes après le travail
         print("Je suis le processus ",id," j'ai rendu: ",k_bills," il y a donc  :", nbr_disponible_billes.value," disponibles")
 
 def rendre(k_bills, s): #Fonction utilisé par les processus pour rendre les billes utilisés au processus père

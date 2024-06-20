@@ -45,11 +45,11 @@ def en_couleur(Coul):
 def erase_line():
     print(CLEARELN, end='')
 
-def load_nextgen(start, end, size, barriere, shared_cworld_array, shared_nworld_array):
+def load_nextgen(start, end, size, barriere, shared_cworld_array, shared_nworld_array): #Fonction qui crée les processus permettant de calculer les générations futures
     while True:
-        current_world = np.array(shared_cworld_array[:]).reshape(size, size)
-        for i in range(start, end):
-            for j in range(size):
+        current_world = np.array(shared_cworld_array[:]).reshape(size, size) #Les reshapes me permettent de passer un matrice dans un tableau partagé et inversement
+        for i in range(start, end): # Calcul avec les cellules voisines, pour les bords il utilise les cases de l'autre côté pour "simuler" une grille infinie
+            for j in range(size): # Somme des cases voisines
                 alive = sum([
                     current_world[(i-1) % size, (j-1) % size],
                     current_world[(i-1) % size, j % size],
@@ -61,13 +61,13 @@ def load_nextgen(start, end, size, barriere, shared_cworld_array, shared_nworld_
                     current_world[(i+1) % size, (j+1) % size],
                 ])
 
-                if current_world[i, j] == 1:
+                if current_world[i, j] == 1: # Réaction par rapport aux règles du jeu
                     shared_nworld_array[i*size + j] = 1 if alive in [2, 3] else 0
                 else:
                     shared_nworld_array[i*size + j] = 1 if alive == 3 else 0
 
-        barriere.wait()
-        if barriere.wait() == 0:  # Only one process updates the shared array
+        barriere.wait() # Attente de tout les processus
+        if barriere.wait() == 0:  # Mise a jour de la grille par un seul processus pour éviter un bordel
             for idx in range(size*size):
                 shared_cworld_array[idx] = shared_nworld_array[idx]
             print_world(shared_cworld_array, size)
@@ -75,7 +75,7 @@ def load_nextgen(start, end, size, barriere, shared_cworld_array, shared_nworld_
 
         barriere.wait()
 
-def print_world(shared_cworld_array, size):
+def print_world(shared_cworld_array, size): #Fonction qui affiche la grille dans la console en utilisant le move_to 
     effacer_ecran()
     move_to(0, 0)
     current_world = np.array(shared_cworld_array[:]).reshape(size, size)
@@ -97,6 +97,7 @@ if __name__ == "__main__":
             row.append(0)
         current_world.append(row)
 
+# Pour voir l'évolution de la grille j'ai récuperer un modèle de glider gun du jeu de la vie et j'ai mit les coordonnées ci-dessous
     glider_gun_coords = [
     (1, 25),
     (2, 23), (2, 25),
@@ -111,18 +112,18 @@ if __name__ == "__main__":
 
     for x, y in glider_gun_coords:
         current_world[x][y] = 1
-        
+
     current_world = np.array(current_world)
     shared_cworld_array = mp.Array('i', current_world.reshape(1, size*size)[0])
     shared_nworld_array = mp.Array('i', size*size)
     print_world(shared_cworld_array, size)
 
-    nb_process = os.cpu_count()
+    nb_process = os.cpu_count() #Adapte le nombre de processus en fonction des capacités de la machine
     barriere = mp.Barrier(nb_process + 1)
     processes = []
-    rows_per_process = size // nb_process
+    rows_per_process = size // nb_process # Permet de répartir un nombre de lignes équivalent entre chaques processus
 
-    for i in range(nb_process):
+    for i in range(nb_process): # Et donc création des processus calculateurs
         start = i * rows_per_process
         end = (i + 1) * rows_per_process if i < nb_process - 1 else size
         p = mp.Process(target=load_nextgen, args=(start, end, size, barriere, shared_cworld_array, shared_nworld_array))

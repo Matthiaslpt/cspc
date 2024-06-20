@@ -4,7 +4,7 @@ import random
 import signal
 import sys
 
-def lecteur(lecteurs, redacteurs, demandes_de_redaction, mutex):
+def lecteur(lecteurs, redacteurs, demandes_de_redaction, mutex): # Fonction lecteur qui crée les processus lecteurs n'ayant pas la priorité sur les rédacteurs
     while True:
         try:
             with mutex:
@@ -28,7 +28,7 @@ def lecteur(lecteurs, redacteurs, demandes_de_redaction, mutex):
         print(f"Lecteur {mp.current_process().name} a fini de lire les données")
         time.sleep(random.uniform(0.1, 0.5))
 
-def redacteur(lecteurs, redacteurs, demandes_de_redaction, mutex):
+def redacteur(lecteurs, redacteurs, demandes_de_redaction, mutex): # Fonction rédacteur qui crée les processus rédacteurs
     while True:
         try:
             with mutex:
@@ -55,10 +55,10 @@ def redacteur(lecteurs, redacteurs, demandes_de_redaction, mutex):
         time.sleep(random.uniform(0.1, 0.5))
 
 def handle_sigint(signum, frame):
-    print("\nArrêt du programme par l'utilisateur (Ctrl-C).")
+    print("\nArrêt du programme")
     sys.exit(0)
 
-if __name__ == "__main__":
+if __name__ == "__main__": # Programme principal qui initialise les variables, crée/lance les processus et gère les interruptions
     signal.signal(signal.SIGINT, handle_sigint)
     
     nb_lecteurs = 3
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         for p in processus:
             p.join()
     except KeyboardInterrupt:
-        print("\nArrêt du programme par l'utilisateur (Ctrl-C).")
+        print("\nArrêt du programme")
         for p in processus:
             p.terminate()
         for p in processus:

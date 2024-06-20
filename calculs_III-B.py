@@ -78,14 +78,14 @@ def fils_calculette(queue_d, queue_a, lock_d, lock_a):
 if __name__ == "__main__":
     m = 2  # Nombre de demandeurs
     n = 4  # Nombre de fils calculette
-    queue_d = mp.Queue()
-    queue_a = mp.Queue()
+    queue_d = mp.Queue() # file avec les demandes (d -> demandes)
+    queue_a = mp.Queue() # file avec les réponses (a -> answers)
     
     lock_d = mp.Lock()
     lock_a = mp.Lock()
     
-    processes_d = [mp.Process(target=demandeur, args=(queue_d, queue_a, lock_d, lock_a)) for _ in range(m)]
-    processes_c = [mp.Process(target=fils_calculette, args=(queue_d, queue_a, lock_d, lock_a)) for _ in range(n)]
+    processes_d = [mp.Process(target=demandeur, args=(queue_d, queue_a, lock_d, lock_a)) for _ in range(m)] # crée m processus demandeur
+    processes_c = [mp.Process(target=fils_calculette, args=(queue_d, queue_a, lock_d, lock_a)) for _ in range(n)] # idem pour n calculateur
 
     signal.signal(signal.SIGINT, interrupt)  # Gère les interruptions clavier
 
