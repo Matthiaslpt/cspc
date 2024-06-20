@@ -8,7 +8,7 @@ import sys
 def interrupt(signal, frame):
     print("Fin du programme")
     for process in mp.active_children():
-        process.terminate()  # Termine tous les processus enfants actifs
+        process.terminate()  
     sys.exit(0)
 
 # Fonction pour les demandeurs
