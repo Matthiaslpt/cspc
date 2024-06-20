@@ -112,9 +112,7 @@ def verifier_prediction(prediction_utilisateur, chevaux_gagnants):
     else:
         print("Dommage! Le cheval que vous avez choisi n'a pas gagné.")
 
-# Fonction pour l'arbitre de la course
-# Fonction pour l'arbitre de la course
-# Fonction pour l'arbitre de la course
+
 # Fonction pour l'arbitre de la course
 def arbitre(positions, keep_running, mutex):
     while True:
@@ -190,7 +188,7 @@ if __name__ == "__main__":
         mp.set_start_method('fork')
 
     LONGEUR_COURSE = 50
-    Nb_process = 10
+    Nb_process = 5
 
     positions = mp.Array('i', [0] * Nb_process)
     keep_running = mp.Value(ctypes.c_bool, True)

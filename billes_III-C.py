@@ -2,6 +2,14 @@ import multiprocessing as mp
 import os, sys, time, signal
 import random as r
 
+
+# Fonction pour gérer l'interruption (Ctrl+C)
+def interrupt(signal, frame):
+    print("Fin du programme")
+    for process in mp.active_children():
+        process.terminate()  # Termine tous les processus enfants actifs
+    sys.exit(0)
+
 def Controleur(max_billes, SC, tableau_p):
     while True:
         with SC:
@@ -67,9 +75,14 @@ if __name__ == "__main__":
     c = mp.Process(target=Controleur, args=(9, SC, tableau_p))
     c.start()
 
-    for pr in process:
-        pr.join()
-        tableau_p[i] = pr.pid if pr else 0
+    
+
+    try:
+        for pr in process:
+            pr.join()
+            tableau_p[i] = pr.pid if pr else 0
+    except KeyboardInterrupt:
+        interrupt(None, None)  # Gère les interruptions pendant l'attente
 
     c.terminate()
     c.join()
