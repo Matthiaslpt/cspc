@@ -14,10 +14,10 @@ def lecteur(lecteurs, redacteurs, demandes_de_redaction, mutex): # Fonction lect
                     mutex.acquire()
                 lecteurs.value += 1
         except KeyboardInterrupt:
-            print(f"Lecteur {mp.current_process().name} interrompu")
+            print(f"Lecteur {mp.current_process().pid} interrompu")
             break
 
-        print(f"Lecteur {mp.current_process().name} lit les données")
+        print(f"Lecteur {mp.current_process().pid} lit les données")
         time.sleep(random.uniform(0.1, 0.5))
 
         with mutex:
@@ -25,7 +25,7 @@ def lecteur(lecteurs, redacteurs, demandes_de_redaction, mutex): # Fonction lect
             if lecteurs.value == 0 and demandes_de_redaction.value == 0:
                 redacteurs.release()
         
-        print(f"Lecteur {mp.current_process().name} a fini de lire les données")
+        print(f"Lecteur {mp.current_process().pid} a fini de lire les données")
         time.sleep(random.uniform(0.1, 0.5))
 
 def redacteur(lecteurs, redacteurs, demandes_de_redaction, mutex): # Fonction rédacteur qui crée les processus rédacteurs
@@ -33,16 +33,16 @@ def redacteur(lecteurs, redacteurs, demandes_de_redaction, mutex): # Fonction r�
         try:
             with mutex:
                 demandes_de_redaction.value += 1
-                while lecteurs.value > 0 or redacteurs.get_value() == 0:
+                while lecteurs.value > 0 or redacteurs.get_value() == 0: #On attend que les conditions soient validées pour lancer l'écriture du rédacteur
                     mutex.release()
                     time.sleep(0.1)
                     mutex.acquire()
-                redacteurs.acquire()
+                redacteurs.acquire() # "Autorisation d'écrire"
         except KeyboardInterrupt:
-            print(f"Rédacteur {mp.current_process().name} interrompu")
+            print(f"Rédacteur {mp.current_process().pid} interrompu")
             break
 
-        print(f"Rédacteur {mp.current_process().name} écrit les données")
+        print(f"Rédacteur {mp.current_process().pid} écrit les données")
         time.sleep(random.uniform(0.1, 0.5))
 
         with mutex:
@@ -51,7 +51,7 @@ def redacteur(lecteurs, redacteurs, demandes_de_redaction, mutex): # Fonction r�
             if demandes_de_redaction.value == 0:
                 redacteurs.release()
         
-        print(f"Rédacteur {mp.current_process().name} a fini d'écrire les données")
+        print(f"Rédacteur {mp.current_process().pid} a fini d'écrire les données")
         time.sleep(random.uniform(0.1, 0.5))
 
 def handle_sigint(signum, frame):
@@ -71,10 +71,10 @@ if __name__ == "__main__": # Programme principal qui initialise les variables, c
 
     processus = []
     for i in range(nb_lecteurs):
-        p = mp.Process(target=lecteur, args=(lecteurs, redacteurs, demandes_de_redaction, mutex), name=f"L{i}")
+        p = mp.Process(target=lecteur, args=(lecteurs, redacteurs, demandes_de_redaction, mutex))
         processus.append(p)
     for i in range(nb_redacteurs):
-        p = mp.Process(target=redacteur, args=(lecteurs, redacteurs, demandes_de_redaction, mutex), name=f"R{i}")
+        p = mp.Process(target=redacteur, args=(lecteurs, redacteurs, demandes_de_redaction, mutex))
         processus.append(p)
 
     try:
