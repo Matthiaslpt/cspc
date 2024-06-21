@@ -89,7 +89,7 @@ def print_world(shared_cworld_array, size): #Fonction qui affiche la grille dans
 
 if __name__ == "__main__":
     size = 40
-    # Create the world
+    # Crée la grille (world)
     current_world = []
     for x in range(1, size + 1):
         row = []

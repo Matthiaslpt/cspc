@@ -54,11 +54,11 @@ def fils_calculette(queue_d, queue_a, lock_d, lock_a):
         while True:
             # Récupère une commande de la queue_d avec verrou
             with lock_d:
-                if not queue_d.empty():
+                if not queue_d.empty(): # Si il y a des demandes il en récupère une
                     cmd, demandeur_id = queue_d.get()
                     print(f"Le fils {mp.current_process().pid} a reçu : {cmd}")
                     
-                    try:
+                    try: # évaluation de la commande et prise en compte des erreurs potentiels
                         res = eval(cmd) 
                     except Exception as e:
                         res = f"Erreur: {e}"
