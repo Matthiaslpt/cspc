@@ -21,7 +21,7 @@ NORMAL = "\x1B[0m"                   # Normal
 BOLD = "\x1B[1m"                     # Bold
 UNDERLINE = "\x1B[4m"                # Underline
 
-CL_WHITE = "\033[01;37m"             # White color
+CL_WHITE = "\033[01;37m"             # Blanc
 Case = {0: "⬛", 1: "⬜"}
 
 def effacer_ecran():

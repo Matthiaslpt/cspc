@@ -8,7 +8,7 @@ def lecteur(lecteurs, redacteurs, demandes_de_redaction, mutex): # Fonction lect
     while True:
         try:
             with mutex:
-                while demandes_de_redaction.value > 0:
+                while demandes_de_redaction.value > 0: # Personne n'écrit actuellement
                     mutex.release()
                     time.sleep(0.1)
                     mutex.acquire()
